@@ -12,12 +12,11 @@ from browser_use.agent.views import (
     AgentHistory,
     AgentHistoryList,
     AgentStepInfo,
-    ToolCallingMethod,
 )
 from browser_use.browser.views import BrowserStateHistory
 from browser_use.utils import time_execution_async
 from dotenv import load_dotenv
-from browser_use.agent.message_manager.utils import is_model_without_tool_support
+# is_model_without_tool_support removed in browser_use 0.6.0
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -28,16 +27,13 @@ SKIP_LLM_API_KEY_VERIFICATION = (
 
 
 class BrowserUseAgent(Agent):
-    def _set_tool_calling_method(self) -> ToolCallingMethod | None:
+    def _set_tool_calling_method(self) -> str | None:
         tool_calling_method = self.settings.tool_calling_method
         if tool_calling_method == 'auto':
-            if is_model_without_tool_support(self.model_name):
-                return 'raw'
-            elif self.chat_model_library == 'ChatGoogleGenerativeAI':
+            # Simplified logic for browser_use 0.6.0
+            if self.chat_model_library == 'ChatGoogleGenerativeAI':
                 return None
-            elif self.chat_model_library == 'ChatOpenAI':
-                return 'function_calling'
-            elif self.chat_model_library == 'AzureChatOpenAI':
+            elif self.chat_model_library in ['ChatOpenAI', 'AzureChatOpenAI']:
                 return 'function_calling'
             else:
                 return None

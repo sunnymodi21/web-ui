@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
 
-from browser_use.browser.browser import BrowserConfig
+from browser_use.browser.profile import BrowserProfile
 from langchain_community.tools.file_management import (
     ListDirectoryTool,
     ReadFileTool,
@@ -29,11 +29,12 @@ from langchain_core.tools import StructuredTool, Tool
 from langgraph.graph import StateGraph
 from pydantic import BaseModel, Field
 
-from browser_use.browser.context import BrowserContextConfig
+# BrowserContextConfig removed in browser_use 0.6.0 - now part of BrowserProfile
 
 from src.agent.browser_use.browser_use_agent import BrowserUseAgent
-from src.browser.custom_browser import CustomBrowser
-from src.controller.custom_controller import CustomController
+# Custom browser classes removed - using CDP-based browser_use 0.6.0
+from browser_use.browser.session import BrowserSession
+from browser_use.controller.service import Controller
 from src.utils.mcp_client import setup_mcp_client_and_tools
 
 logger = logging.getLogger(__name__)

@@ -9,20 +9,13 @@ from playwright.async_api import (
     Playwright,
     async_playwright,
 )
-from browser_use.browser.browser import Browser, IN_DOCKER
-from browser_use.browser.context import BrowserContext, BrowserContextConfig
+from browser_use.browser.session import BrowserSession
+from browser_use.browser.profile import BrowserProfile
 from playwright.async_api import BrowserContext as PlaywrightBrowserContext
 import logging
 
-from browser_use.browser.chrome import (
-    CHROME_ARGS,
-    CHROME_DETERMINISTIC_RENDERING_ARGS,
-    CHROME_DISABLE_SECURITY_ARGS,
-    CHROME_DOCKER_ARGS,
-    CHROME_HEADLESS_ARGS,
-)
-from browser_use.browser.context import BrowserContext, BrowserContextConfig
-from browser_use.browser.utils.screen_resolution import get_screen_resolution, get_window_adjustments
+# Chrome args and utils imports need to be updated for browser_use 0.6.0
+# These modules have been restructured in the new version
 from browser_use.utils import time_execution_async
 import socket
 
@@ -31,7 +24,7 @@ from .custom_context import CustomBrowserContext
 logger = logging.getLogger(__name__)
 
 
-class CustomBrowser(Browser):
+class CustomBrowser(BrowserSession):
 
     async def new_context(self, config: BrowserContextConfig | None = None) -> CustomBrowserContext:
         """Create a browser context"""
