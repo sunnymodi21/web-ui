@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core \
     fonts-dejavu-extra \
     vim \
+    pipx \
     && rm -rf /var/lib/apt/lists/*
 
 # Install noVNC
@@ -69,27 +70,27 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install playwright browsers and dependencies
-# playwright documentation suggests PLAYWRIGHT_BROWSERS_PATH is still relevant
-# or that playwright installs to a similar default location that Playwright would.
-# Let's assume playwright respects PLAYWRIGHT_BROWSERS_PATH or its default install location is findable.
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-browsers
-RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH
+# Install uv and uvx for browser-use
+RUN pip install --no-cache-dir uv
 
-# Install recommended: Google Chrome (instead of just Chromium for better undetectability)
-# The 'playwright install chrome' command might download and place it.
-# The '--with-deps' equivalent for playwright install is to run 'playwright install-deps chrome' after.
-# RUN playwright install chrome --with-deps
+# Install Chromium browser for browser-use
+RUN apt-get update \
+    && apt-get install -y chromium chromium-driver \
+    && rm -rf /var/lib/apt/lists/*
 
-# Alternative: Install Chromium if Google Chrome is problematic in certain environments
-RUN playwright install chromium --with-deps
+# Set Chrome path for browser-use
+ENV CHROME_BIN=/usr/bin/chromium
+ENV DISPLAY=:99
+
+# Also create a symlink for uvx
+RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx || true
 
 
 # Copy the application code
 COPY . .
 
-# Set up supervisor configuration
-RUN mkdir -p /var/log/supervisor
+# Set up supervisor configuration and DBus
+RUN mkdir -p /var/log/supervisor /run/dbus
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 7788 6080 5901 9222
