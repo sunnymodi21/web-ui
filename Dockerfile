@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     xvfb \
-    libgconf-2-4 \
     libxss1 \
     libnss3 \
     libnspr4 \
