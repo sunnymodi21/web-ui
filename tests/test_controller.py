@@ -11,7 +11,9 @@ load_dotenv()
 
 
 async def test_mcp_client():
-    from src.utils.mcp_client import setup_mcp_client_and_tools, create_tool_param_model
+    # MCP functionality removed - test disabled
+    print("MCP functionality has been removed from the application")
+    return
 
     test_server_config = {
         "mcpServers": {
@@ -53,6 +55,9 @@ async def test_mcp_client():
 
 
 async def test_controller_with_mcp():
+    # MCP functionality removed - test disabled  
+    print("MCP functionality has been removed from the application")
+    return
     import os
     from src.controller.custom_controller import CustomController
     from browser_use.controller.registry.views import ActionModel

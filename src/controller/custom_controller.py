@@ -11,10 +11,9 @@ import logging
 import inspect
 # import asyncio  # Unused
 # import os  # Unused
-from langchain_core.language_models.chat_models import BaseChatModel
+from browser_use.llm import BaseChatModel
 from browser_use.agent.views import ActionModel, ActionResult
-
-from src.utils.mcp_client import create_tool_param_model, setup_mcp_client_and_tools
+from src.utils.mcp_client import get_mcp_manager, MCPManager
 
 from browser_use.utils import time_execution_sync
 
@@ -32,8 +31,7 @@ class CustomController(Controller):
         super().__init__(exclude_actions=exclude_actions, output_model=output_model)
         self._register_custom_actions()
         self.ask_assistant_callback = ask_assistant_callback
-        self.mcp_client = None
-        self.mcp_server_config = None
+        self.mcp_manager: Optional[MCPManager] = None
 
     def _register_custom_actions(self):
         """Register all custom browser actions"""
@@ -81,26 +79,9 @@ class CustomController(Controller):
             #
             context: Context | None = None,
     ) -> ActionResult:
-        """Execute an action - handle MCP tools specially, delegate others to parent"""
+        """Execute an action using parent class - MCP functionality removed"""
         
-        # Check if this is an MCP tool
-        for action_name, params in action.model_dump(exclude_unset=True).items():
-            if params is not None and action_name.startswith("mcp"):
-                # Handle MCP tool specially
-                logger.debug(f"Invoke MCP tool: {action_name}")
-                mcp_tool = self.registry.registry.actions.get(action_name).function
-                result = await mcp_tool.ainvoke(params)
-                
-                if isinstance(result, str):
-                    return ActionResult(extracted_content=result)
-                elif isinstance(result, ActionResult):
-                    return result
-                elif result is None:
-                    return ActionResult()
-                else:
-                    raise ValueError(f'Invalid action result type: {type(result)} of {result}')
-        
-        # For non-MCP actions, delegate to parent class
+        # Delegate to parent class for all actions
         return await super().act(
             action=action,
             browser_session=browser_session,
@@ -112,31 +93,40 @@ class CustomController(Controller):
         )
 
     async def setup_mcp_client(self, mcp_server_config: Optional[Dict[str, Any]] = None):
-        self.mcp_server_config = mcp_server_config
-        if self.mcp_server_config:
-            self.mcp_client = await setup_mcp_client_and_tools(self.mcp_server_config)
-            self.register_mcp_tools()
-
-    def register_mcp_tools(self):
-        """
-        Register the MCP tools used by this controller.
-        """
-        if self.mcp_client:
-            for server_name in self.mcp_client.server_name_to_tools:
-                for tool in self.mcp_client.server_name_to_tools[server_name]:
-                    tool_name = f"mcp.{server_name}.{tool.name}"
-                    self.registry.registry.actions[tool_name] = RegisteredAction(
-                        name=tool_name,
-                        description=tool.description,
-                        function=tool,
-                        param_model=create_tool_param_model(tool),
-                    )
-                    logger.info(f"Add mcp tool: {tool_name}")
-                logger.debug(
-                    f"Registered {len(self.mcp_client.server_name_to_tools[server_name])} mcp tools for {server_name}")
-        else:
-            logger.warning(f"MCP client not started.")
-
+        """Set up MCP servers using browser-use's native MCP implementation."""
+        if not mcp_server_config:
+            logger.info("No MCP server configuration provided")
+            return
+        
+        try:
+            logger.info("Setting up MCP servers using browser-use implementation...")
+            
+            # Get the global MCP manager
+            self.mcp_manager = get_mcp_manager()
+            
+            # Set up MCP servers
+            success = await self.mcp_manager.setup_mcp_servers(mcp_server_config)
+            
+            if success:
+                # Register MCP tools to this controller
+                tool_count = self.mcp_manager.register_tools_to_controller(self)
+                logger.info(f"Successfully set up MCP with {tool_count} server(s)")
+                
+                connected_servers = self.mcp_manager.get_connected_servers()
+                logger.info(f"Connected MCP servers: {connected_servers}")
+            else:
+                logger.warning("Failed to set up MCP servers")
+                
+        except Exception as e:
+            logger.error(f"Error setting up MCP client: {e}", exc_info=True)
+    
     async def close_mcp_client(self):
-        if self.mcp_client:
-            await self.mcp_client.__aexit__(None, None, None)
+        """Close MCP connections."""
+        if self.mcp_manager:
+            try:
+                await self.mcp_manager.disconnect_all()
+                logger.info("Closed all MCP connections")
+            except Exception as e:
+                logger.error(f"Error closing MCP connections: {e}")
+            finally:
+                self.mcp_manager = None

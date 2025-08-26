@@ -55,22 +55,7 @@ Activate the virtual environment:
 source .venv/bin/activate
 ```
 
-#### Step 3: Install Dependencies
-Install Python packages:
-```bash
-uv pip install -r requirements.txt
-```
-
-Install Browsers in playwright. 
-```bash
-playwright install --with-deps
-```
-Or you can install specific browsers by running:
-```bash
-playwright install chromium --with-deps
-```
-
-#### Step 4: Configure Environment
+#### Step 3: Configure Environment
 1. Create a copy of the example environment file:
 - Windows (Command Prompt):
 ```bash
@@ -82,7 +67,7 @@ cp .env.example .env
 ```
 2. Open `.env` in your preferred text editor and add your API keys and other settings
 
-#### Step 5: Enjoy the web-ui
+#### Step 4: Enjoy the web-ui
 1.  **Run the WebUI:**
     ```bash
     python webui.py --ip 127.0.0.1 --port 7788

@@ -15,6 +15,24 @@ from src.utils import llm_provider
 logger = logging.getLogger(__name__)
 
 
+async def update_mcp_server(mcp_file: str, webui_manager: WebuiManager):
+    """
+    Update the MCP server configuration for deep research agent.
+    """
+    if hasattr(webui_manager, "dr_agent") and webui_manager.dr_agent:
+        logger.warning("⚠️ Close agent because mcp file has changed!")
+        # For deep research agent, we'll handle MCP setup when creating the agent
+
+    if not mcp_file or not os.path.exists(mcp_file) or not mcp_file.endswith('.json'):
+        logger.warning(f"{mcp_file} is not a valid MCP file.")
+        return '', gr.update(visible=False)
+
+    with open(mcp_file, 'r') as f:
+        mcp_server = json.load(f)
+
+    return json.dumps(mcp_server, indent=2), gr.update(visible=True)
+
+
 async def _initialize_llm(provider: Optional[str], model_name: Optional[str], temperature: float,
                           base_url: Optional[str], api_key: Optional[str], num_ctx: Optional[int] = None):
     """Initializes the LLM based on settings. Returns None if provider/model is missing."""
@@ -68,7 +86,7 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
     stop_button_comp = webui_manager.get_component_by_id("deep_research_agent.stop_button")
     markdown_display_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_display")
     markdown_download_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_download")
-    mcp_server_config_comp = webui_manager.get_component_by_id("deep_research_agent.mcp_server_config")
+# MCP functionality removed
 
     # --- 1. Get Task and Settings ---
     task_topic = components.get(research_task_comp, "").strip()
@@ -81,8 +99,17 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
         logger.warning(f"Unsafe base_save_dir detected: {base_save_dir}. Using default directory.")
         normalized_base_save_dir = os.path.abspath(safe_root_dir)
     base_save_dir = normalized_base_save_dir
+    
+    # Get MCP configuration
+    mcp_server_config_comp = webui_manager.get_component_by_id("deep_research_agent.mcp_server_config")
     mcp_server_config_str = components.get(mcp_server_config_comp)
-    mcp_config = json.loads(mcp_server_config_str) if mcp_server_config_str else None
+    mcp_config = None
+    if mcp_server_config_str:
+        try:
+            mcp_config = json.loads(mcp_server_config_str)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid MCP config JSON: {e}. Continuing without MCP.")
+            mcp_config = None
 
     if not task_topic:
         gr.Warning("Please enter a research task.")
@@ -151,16 +178,15 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
             webui_manager.dr_agent = DeepResearchAgent(
                 llm=llm,
                 browser_config=browser_config_dict,
-                mcp_server_config=mcp_config
+                # Note: Deep research agent doesn't directly support MCP in the simplified version
+                # but browser agents within it can use MCP through the controller
             )
             logger.info("DeepResearchAgent initialized.")
 
         # --- 5. Start Agent Run ---
-        agent_run_coro = webui_manager.dr_agent.run(
-            topic=task_topic,
-            task_id=task_id_to_resume,
-            save_dir=base_save_dir,
-            max_parallel_browsers=max_parallel_agents
+        agent_run_coro = webui_manager.dr_agent.research(
+            query=task_topic,
+            output_dir=base_save_dir
         )
         agent_task = asyncio.create_task(agent_run_coro)
         webui_manager.dr_current_task = agent_task
@@ -355,22 +381,7 @@ async def stop_deep_research(webui_manager: WebuiManager) -> Dict[Component, Any
     return final_update
 
 
-async def update_mcp_server(mcp_file: str, webui_manager: WebuiManager):
-    """
-    Update the MCP server.
-    """
-    if hasattr(webui_manager, "dr_agent") and webui_manager.dr_agent:
-        logger.warning("⚠️ Close controller because mcp file has changed!")
-        await webui_manager.dr_agent.close_mcp_client()
-
-    if not mcp_file or not os.path.exists(mcp_file) or not mcp_file.endswith('.json'):
-        logger.warning(f"{mcp_file} is not a valid MCP file.")
-        return None, gr.update(visible=False)
-
-    with open(mcp_file, 'r') as f:
-        mcp_server = json.load(f)
-
-    return json.dumps(mcp_server, indent=2), gr.update(visible=True)
+# MCP functionality removed
 
 
 def create_deep_research_agent_tab(webui_manager: WebuiManager):
@@ -381,9 +392,8 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
     tab_components = {}
 
     with gr.Group():
-        with gr.Row():
-            mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
-            mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
+        mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
+        mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
 
     with gr.Group():
         research_task = gr.Textbox(label="Research Task", lines=5,
@@ -421,12 +431,12 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
     webui_manager.init_deep_research_agent()
 
     async def update_wrapper(mcp_file):
-        """Wrapper for handle_pause_resume."""
+        """Wrapper for MCP server update."""
         update_dict = await update_mcp_server(mcp_file, webui_manager)
-        yield update_dict
+        return update_dict
 
     mcp_json_file.change(
-        update_wrapper,
+        fn=update_wrapper,
         inputs=[mcp_json_file],
         outputs=[mcp_server_config, mcp_server_config]
     )

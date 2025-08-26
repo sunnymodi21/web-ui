@@ -23,7 +23,7 @@ from src.browser.browser_compat import (
 from browser_use.controller.service import Controller
 from browser_use.browser import BrowserSession
 from gradio.components import Component
-# Import browser_use LLM classes instead of langchain
+# Import browser_use LLM classes
 from browser_use.llm.anthropic.chat import ChatAnthropic
 from browser_use.llm.openai.chat import ChatOpenAI
 from browser_use.llm.ollama.chat import ChatOllama
@@ -96,8 +96,8 @@ async def _initialize_llm(
                 temperature=temperature,
             )
         else:
-            # Try to use the old langchain provider for unsupported providers
-            logger.warning(f"Provider '{provider}' not directly supported in browser_use, falling back to langchain")
+            # Use the centralized LLM provider for all other providers
+            logger.info(f"Using LLM provider for '{provider}'")
             llm = llm_provider.get_llm_model(
                 provider=provider,
                 model_name=model_name,
@@ -106,8 +106,6 @@ async def _initialize_llm(
                 api_key=api_key or None,
                 num_ctx=num_ctx if provider == "ollama" else None,
             )
-            # Wrap langchain model in a compatibility layer if needed
-            # For now, this may still fail with browser_use validation
         
         return llm
     except Exception as e:
@@ -404,9 +402,13 @@ async def run_agent_task(
     mcp_server_config_str = (
         components.get(mcp_server_config_comp) if mcp_server_config_comp else None
     )
-    mcp_server_config = (
-        json.loads(mcp_server_config_str) if mcp_server_config_str else None
-    )
+    mcp_server_config = None
+    if mcp_server_config_str:
+        try:
+            mcp_server_config = json.loads(mcp_server_config_str)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid MCP config JSON: {e}. Continuing without MCP.")
+            mcp_server_config = None
 
     # Planner LLM Settings (Optional)
     planner_llm_provider_name = get_setting("planner_llm_provider") or None
@@ -481,7 +483,7 @@ async def run_agent_task(
         return await _ask_assistant_callback(webui_manager, query, browser_session)
 
     if not webui_manager.bu_controller:
-        # Use CustomController which has setup_mcp_client method
+        # Set the controller with MCP setup using browser-use
         webui_manager.bu_controller = CustomController()
         await webui_manager.bu_controller.setup_mcp_client(mcp_server_config)
 

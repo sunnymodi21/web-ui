@@ -11,7 +11,8 @@ from browser_use.browser.profile import BrowserProfile
 from browser_use.llm import BaseChatModel, UserMessage, SystemMessage, AssistantMessage
 from pydantic import BaseModel, Field
 
-# Using browser_use.Agent directly
+from src.agent.browser_use.browser_use_agent import BrowserUseAgent
+from browser_use.browser.session import BrowserSession
 from browser_use.controller.service import Controller
 
 logger = logging.getLogger(__name__)
@@ -62,12 +63,12 @@ async def run_single_browser_task(
         use_vision: bool = False,
 ) -> Dict[str, Any]:
     """
-    Simplified browser task runner using browser-use Agent
+    Simplified browser task runner without complex orchestration
     """
     try:
         logger.info(f"Running browser task: {task_query}")
         
-        # Create browser profile  
+        # Create browser profile and session
         browser_profile = BrowserProfile(
             headless=browser_config.get("headless", True),
             window_width=browser_config.get("window_width", 1280),
@@ -76,15 +77,14 @@ async def run_single_browser_task(
             user_data_dir=browser_config.get("user_data_dir"),
         )
         
-        # Use browser-use Agent directly with browser profile
+        browser_session = BrowserSession.init_browser(browser_profile=browser_profile)
         controller = Controller()
         
-        # Create browser agent using browser-use Agent class
-        from browser_use import Agent
-        browser_agent = Agent(
+        # Create browser agent
+        browser_agent = BrowserUseAgent(
             task=task_query,
             llm=llm,
-            browser_profile=browser_profile,
+            browser=browser_session,
             controller=controller,
             use_vision=use_vision,
         )
@@ -115,6 +115,11 @@ async def run_single_browser_task(
         # Cleanup
         if task_id in _BROWSER_AGENT_INSTANCES:
             del _BROWSER_AGENT_INSTANCES[task_id]
+        try:
+            if 'browser_session' in locals():
+                await browser_session.close()
+        except:
+            pass
 
 
 class DeepResearchAgent:
@@ -222,13 +227,7 @@ Format the report in clear markdown with appropriate headings and structure.
             ]
             
             response = await self.llm.ainvoke(messages)
-            # Handle different response types from browser-use LLMs
-            if hasattr(response, 'content'):
-                return response.content
-            elif hasattr(response, 'text'):
-                return response.text
-            else:
-                return str(response)
+            return response.content if hasattr(response, 'content') else str(response)
             
         except Exception as e:
             logger.error(f"Report generation failed: {e}")
