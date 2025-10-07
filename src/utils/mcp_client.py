@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional, Any
 from browser_use.mcp import MCPClient
-from browser_use.controller.service import Controller
+from browser_use import Controller
 
 logger = logging.getLogger(__name__)
 

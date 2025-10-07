@@ -12,7 +12,7 @@ from browser_use.llm import BaseChatModel, UserMessage, SystemMessage, Assistant
 from pydantic import BaseModel, Field
 
 # Using browser_use.Agent directly
-from browser_use.controller.service import Controller
+from browser_use import Controller
 
 logger = logging.getLogger(__name__)
 

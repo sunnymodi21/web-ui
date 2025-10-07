@@ -20,7 +20,7 @@ from src.browser.browser_compat import (
     Browser,
     BrowserContext
 )
-from browser_use.controller.service import Controller
+from browser_use import Controller
 from browser_use.browser import BrowserSession
 from gradio.components import Component
 # Import browser_use LLM classes
@@ -32,7 +32,7 @@ from browser_use.llm.groq.chat import ChatGroq
 from browser_use.llm.base import BaseChatModel
 
 # Use standard Agent from browser_use 0.6.0 instead of custom BrowserUseAgent
-from browser_use.agent.service import Agent
+from browser_use import Agent
 # Custom browser classes need to be updated for browser_use 0.6.0
 # from src.browser.custom_browser import CustomBrowser
 from src.controller.custom_controller import CustomController

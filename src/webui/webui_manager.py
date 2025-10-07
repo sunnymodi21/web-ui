@@ -10,9 +10,7 @@ import asyncio
 import time
 
 from gradio.components import Component
-from browser_use.browser.session import BrowserSession
-from browser_use.controller.service import Controller
-from browser_use.agent.service import Agent
+from browser_use import BrowserSession, Controller, Agent
 # Custom browser classes removed - using CDP-based browser_use 0.6.0 directly
 from src.agent.deep_research.deep_research_agent import DeepResearchAgent
 

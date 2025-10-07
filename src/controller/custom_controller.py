@@ -4,8 +4,8 @@ from typing import Optional, Type, Callable, Dict, Any, Union, Awaitable, TypeVa
 from pydantic import BaseModel
 from browser_use.agent.views import ActionResult
 from browser_use.browser import BrowserSession
-from browser_use.controller.service import Controller
-from browser_use.controller.registry.service import RegisteredAction
+from browser_use import Controller
+# from browser_use.controller.registry.service import RegisteredAction  # Not available in browser-use 0.7.10
 # Removed unused imports: DoneAction, Registry, MainContentExtractor, and view classes
 import logging
 import inspect
@@ -19,7 +19,7 @@ from browser_use.utils import time_execution_sync
 
 logger = logging.getLogger(__name__)
 
-Context = TypeVar('Context')
+# Context = TypeVar('Context')  # Removed - not used in browser-use 0.7.10
 
 
 class CustomController(Controller):
@@ -77,7 +77,6 @@ class CustomController(Controller):
             available_file_paths: Optional[list[str]] = None,
             file_system: Optional[Any] = None,  # Added for compatibility with 0.6.0
             #
-            context: Context | None = None,
     ) -> ActionResult:
         """Execute an action using parent class - MCP functionality removed"""
         
@@ -89,7 +88,6 @@ class CustomController(Controller):
             sensitive_data=sensitive_data,
             available_file_paths=available_file_paths,
             file_system=file_system,
-            context=context,
         )
 
     async def setup_mcp_client(self, mcp_server_config: Optional[Dict[str, Any]] = None):

@@ -6,7 +6,8 @@ import os
 
 # from lmnr.sdk.decorators import observe
 from browser_use.agent.gif import create_history_gif
-from browser_use.agent.service import Agent, AgentHookFunc
+from browser_use import Agent
+from browser_use.agent.service import AgentHookFunc
 from browser_use.agent.views import (
     ActionResult,
     AgentHistory,

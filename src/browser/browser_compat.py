@@ -4,8 +4,7 @@ Provides shims for the old API to work with the new one
 """
 
 from browser_use.browser import BrowserSession, BrowserProfile
-from browser_use.controller.service import Controller
-from browser_use.agent.service import Agent
+from browser_use import Controller, Agent
 from typing import Optional, Dict, Any
 import logging
 
