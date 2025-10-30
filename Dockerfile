@@ -1,10 +1,10 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # Set platform for multi-arch builds (Docker Buildx will set this)
 ARG TARGETPLATFORM
 ARG NODE_MAJOR=20
 
-# Install system dependencies
+# Install system dependencies (removed libgconf-2-4)
 RUN apt-get update && apt-get install -y \
     wget \
     netcat-traditional \
@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     xdg-utils \
     fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-unifont \
     dbus \
     xauth \
     x11vnc \
@@ -56,10 +58,10 @@ RUN mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
-    && apt-get install nodejs -y \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify Node.js and npm installation (optional, but good for debugging)
+# Verify Node.js and npm installation
 RUN node -v && npm -v && npx -v
 
 # Set up working directory
@@ -67,26 +69,16 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install uv and uvx for browser-use
-RUN pip install --no-cache-dir uv
+# Playwright setup
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-browsers
+RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH
 
-# Install Chromium browser for browser-use
-RUN apt-get update \
-    && apt-get install -y chromium chromium-driver \
-    && rm -rf /var/lib/apt/lists/*
+# Install Chromium via Playwright without --with-deps
+RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 playwright install chromium
 
-# Set Chrome path for browser-use
-ENV CHROME_BIN=/usr/bin/chromium
-ENV DISPLAY=:99
-
-# Also create a symlink for uvx
-RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx || true
-
-
-# Copy the application code
+# Copy application code
 COPY . .
 
 # Set up supervisor configuration and DBus
@@ -96,4 +88,3 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 7788 6080 5901 9222 3000
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-#CMD ["/bin/bash"]
