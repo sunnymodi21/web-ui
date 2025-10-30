@@ -1,17 +1,8 @@
 import asyncio
 import pdb
 
-from playwright.async_api import Browser as PlaywrightBrowser
-from playwright.async_api import (
-    BrowserContext as PlaywrightBrowserContext,
-)
-from playwright.async_api import (
-    Playwright,
-    async_playwright,
-)
 from browser_use.browser.session import BrowserSession
 from browser_use.browser.profile import BrowserProfile
-from playwright.async_api import BrowserContext as PlaywrightBrowserContext
 import logging
 
 # Chrome args and utils imports need to be updated for browser_use 0.6.0
@@ -33,8 +24,8 @@ class CustomBrowser(BrowserSession):
         merged_config = {**browser_config, **context_config}
         return CustomBrowserContext(config=BrowserContextConfig(**merged_config), browser=self)
 
-    async def _setup_builtin_browser(self, playwright: Playwright) -> PlaywrightBrowser:
-        """Sets up and returns a Playwright Browser instance with anti-detection measures."""
+    async def _setup_builtin_browser(self, playwright_instance) -> object:
+        """Sets up and returns a Browser instance with anti-detection measures."""
         assert self.config.browser_binary_path is None, 'browser_binary_path should be None if trying to use the builtin browsers'
 
         # Use the configured window size from new_context_config if available
@@ -74,7 +65,7 @@ class CustomBrowser(BrowserSession):
             if s.connect_ex(('localhost', self.config.chrome_remote_debugging_port)) == 0:
                 chrome_args.remove(f'--remote-debugging-port={self.config.chrome_remote_debugging_port}')
 
-        browser_class = getattr(playwright, self.config.browser_class)
+        browser_class = getattr(playwright_instance, self.config.browser_class)
         args = {
             'chromium': list(chrome_args),
             'firefox': [
@@ -92,7 +83,7 @@ class CustomBrowser(BrowserSession):
         }
 
         browser = await browser_class.launch(
-            channel='chromium',  # https://github.com/microsoft/playwright/issues/33566
+            channel='chromium',
             headless=self.config.headless,
             args=args[self.config.browser_class],
             proxy=self.config.proxy.model_dump() if self.config.proxy else None,

@@ -71,12 +71,20 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Playwright setup
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-browsers
-RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH
+# Install uv and uvx for browser-use
+RUN pip install --no-cache-dir uv
 
-# Install Chromium via Playwright without --with-deps
-RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 playwright install chromium
+# Install Chromium browser for browser-use
+RUN apt-get update \
+    && apt-get install -y chromium chromium-driver \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Chrome path for browser-use
+ENV CHROME_BIN=/usr/bin/chromium
+ENV DISPLAY=:99
+
+# Also create a symlink for uvx
+RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx || true
 
 # Copy application code
 COPY . .
