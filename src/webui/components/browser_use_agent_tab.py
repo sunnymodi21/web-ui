@@ -484,7 +484,7 @@ async def run_agent_task(
 
     if not webui_manager.bu_controller:
         # Set the controller with MCP setup using browser-use
-        webui_manager.bu_controller = CustomController()
+        webui_manager.bu_controller = CustomController(ask_assistant_callback=ask_callback_wrapper)
         await webui_manager.bu_controller.setup_mcp_client(mcp_server_config)
 
     # --- 4. Initialize Browser and Context ---
