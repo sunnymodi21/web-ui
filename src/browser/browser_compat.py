@@ -45,6 +45,17 @@ class BrowserContextConfig:
         self.save_recording_path = save_recording_path
         self.save_downloads_path = save_downloads_path
         self._extra = kwargs
+    
+    def model_dump(self) -> Dict[str, Any]:
+        """Compatibility method for pydantic model_dump"""
+        return {
+            'window_width': self.window_width,
+            'window_height': self.window_height,
+            'trace_path': self.trace_path,
+            'save_recording_path': self.save_recording_path,
+            'save_downloads_path': self.save_downloads_path,
+            **self._extra
+        }
 
 class BrowserState:
     """Compatibility shim for BrowserState"""

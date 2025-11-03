@@ -100,14 +100,16 @@ def get_llm_model(provider: str, **kwargs) -> BaseChatModel:
         )
     
     # For providers not directly supported by browser-use, use OpenAI-compatible API
-    elif provider in ["grok", "alibaba", "moonshot", "unbound", "siliconflow", "modelscope"]:
+    elif provider in ["grok", "alibaba", "moonshot", "unbound", "siliconflow", "modelscope", "mistral", "ibm"]:
         base_url_map = {
             "grok": os.getenv("GROK_ENDPOINT", "https://api.x.ai/v1"),
             "alibaba": os.getenv("ALIBABA_ENDPOINT", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             "moonshot": os.getenv("MOONSHOT_ENDPOINT"),
             "unbound": os.getenv("UNBOUND_ENDPOINT", "https://api.getunbound.ai"),
             "siliconflow": os.getenv("SILICONFLOW_ENDPOINT", ""),
-            "modelscope": os.getenv("MODELSCOPE_ENDPOINT", "")
+            "modelscope": os.getenv("MODELSCOPE_ENDPOINT", ""),
+            "mistral": os.getenv("MISTRAL_ENDPOINT", "https://api.mistral.ai/v1"),
+            "ibm": os.getenv("IBM_ENDPOINT", "https://us-south.ml.cloud.ibm.com")
         }
         
         model_defaults = {
@@ -116,19 +118,29 @@ def get_llm_model(provider: str, **kwargs) -> BaseChatModel:
             "moonshot": "moonshot-v1-32k-vision-preview",
             "unbound": "gpt-4o-mini",
             "siliconflow": "Qwen/QwQ-32B",
-            "modelscope": "Qwen/QwQ-32B"
+            "modelscope": "Qwen/QwQ-32B",
+            "mistral": "pixtral-large-latest",
+            "ibm": "ibm/granite-vision-3.1-2b-preview"
         }
         
         base_url = kwargs.get("base_url") or base_url_map[provider]
         if not base_url:
             raise ValueError(f"{provider} endpoint is required")
+        
+        # Special handling for IBM which may require project_id in headers
+        extra_headers = {}
+        if provider == "ibm":
+            project_id = kwargs.get("project_id") or os.getenv("IBM_PROJECT_ID")
+            if project_id:
+                extra_headers["X-Project-ID"] = project_id
             
         return ChatOpenAI(
             model=kwargs.get("model_name", model_defaults[provider]),
             temperature=kwargs.get("temperature", 0.2),
             base_url=base_url,
             api_key=api_key,
+            extra_headers=extra_headers if extra_headers else None,
         )
     
     else:
-        raise ValueError(f"Unsupported provider: {provider}. Supported providers: anthropic, openai, google, groq, ollama, azure_openai, deepseek, grok, alibaba, moonshot, unbound, siliconflow, modelscope")
+        raise ValueError(f"Unsupported provider: {provider}. Supported providers: anthropic, openai, google, groq, ollama, azure_openai, deepseek, grok, alibaba, moonshot, unbound, siliconflow, modelscope, mistral, ibm")

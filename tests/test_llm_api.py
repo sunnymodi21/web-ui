@@ -68,10 +68,13 @@ def test_llm(config, query, image_path=None, system_message=None):
     messages = []
     if system_message:
         messages.append(SystemMessage(content=system_message))
-    messages.append(UserMessage(content=query))
+    
+    # Use create_message_content to handle both text and image content
+    user_content = create_message_content(query, image_path) if image_path else query
+    messages.append(UserMessage(content=user_content))
     
     # Call the LLM
-    ai_msg = llm.ainvoke(messages)
+    ai_msg = llm.invoke(messages)
     
     # Handle different response types
     if hasattr(ai_msg, "reasoning_content"):

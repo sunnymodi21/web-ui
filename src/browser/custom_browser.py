@@ -5,9 +5,19 @@ from browser_use.browser.session import BrowserSession
 from browser_use.browser.profile import BrowserProfile
 import logging
 
-# Chrome args and utils imports need to be updated for browser_use 0.6.0
-# These modules have been restructured in the new version
+# Updated imports for browser_use 0.6.0
+from browser_use.browser.profile import (
+    CHROME_DEFAULT_ARGS,
+    CHROME_HEADLESS_ARGS,
+    CHROME_DOCKER_ARGS,
+    CHROME_DISABLE_SECURITY_ARGS,
+    CHROME_DETERMINISTIC_RENDERING_ARGS,
+    get_display_size,
+    get_window_adjustments,
+)
+from browser_use.config import CONFIG
 from browser_use.utils import time_execution_async
+from .browser_compat import BrowserContextConfig
 import socket
 
 from .custom_context import CustomBrowserContext
@@ -44,13 +54,14 @@ class CustomBrowser(BrowserSession):
             screen_size = {'width': 1920, 'height': 1080}
             offset_x, offset_y = 0, 0
         else:
-            screen_size = get_screen_resolution()
+            display_size = get_display_size()
+            screen_size = {'width': display_size.width, 'height': display_size.height} if display_size else {'width': 1920, 'height': 1080}
             offset_x, offset_y = get_window_adjustments()
 
         chrome_args = {
             f'--remote-debugging-port={self.config.chrome_remote_debugging_port}',
-            *CHROME_ARGS,
-            *(CHROME_DOCKER_ARGS if IN_DOCKER else []),
+            *CHROME_DEFAULT_ARGS,
+            *(CHROME_DOCKER_ARGS if CONFIG.IN_DOCKER else []),
             *(CHROME_HEADLESS_ARGS if self.config.headless else []),
             *(CHROME_DISABLE_SECURITY_ARGS if self.config.disable_security else []),
             *(CHROME_DETERMINISTIC_RENDERING_ARGS if self.config.deterministic_rendering else []),

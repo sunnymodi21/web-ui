@@ -256,20 +256,34 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
 
         # --- 7. Task Finalization ---
         logger.info("Agent task processing finished. Awaiting final result...")
-        final_result_dict = await agent_task  # Get result or raise exception
-        logger.info(f"Agent run completed. Result keys: {final_result_dict.keys() if final_result_dict else 'None'}")
+        final_result_path = await agent_task  # Get result path or raise exception
+        logger.info(f"Agent run completed. Result path: {final_result_path}")
 
-        # Try to get task ID from result if not known before
-        if not running_task_id and final_result_dict and 'task_id' in final_result_dict:
-            running_task_id = final_result_dict['task_id']
+        # Try to get task ID from agent's current state if not known before
+        if not running_task_id and webui_manager.dr_agent.current_task_id:
+            running_task_id = webui_manager.dr_agent.current_task_id
             webui_manager.dr_task_id = running_task_id
             task_specific_dir = os.path.join(base_save_dir, str(running_task_id))
             report_file_path = os.path.join(task_specific_dir, "report.md")
-            logger.info(f"Task ID confirmed from result: {running_task_id}")
+            logger.info(f"Task ID confirmed from agent state: {running_task_id}")
 
         final_ui_update = {}
-        if report_file_path and os.path.exists(report_file_path):
-            logger.info(f"Loading final report from: {report_file_path}")
+        
+        # Use the returned report path directly
+        if final_result_path and os.path.exists(final_result_path):
+            logger.info(f"Loading final report from returned path: {final_result_path}")
+            report_content = _read_file_safe(final_result_path)
+            if report_content:
+                final_ui_update[markdown_display_comp] = gr.update(value=report_content)
+                final_ui_update[markdown_download_comp] = gr.File(value=final_result_path,
+                                                                  label=f"Report ({running_task_id or 'research'}.md)",
+                                                                  interactive=True)
+            else:
+                final_ui_update[markdown_display_comp] = gr.update(
+                    value="# Research Complete\n\n*Error reading final report file.*")
+        elif report_file_path and os.path.exists(report_file_path):
+            # Fallback to expected report path if direct path doesn't work
+            logger.info(f"Loading final report from expected path: {report_file_path}")
             report_content = _read_file_safe(report_file_path)
             if report_content:
                 final_ui_update[markdown_display_comp] = gr.update(value=report_content)
@@ -279,15 +293,8 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
             else:
                 final_ui_update[markdown_display_comp] = gr.update(
                     value="# Research Complete\n\n*Error reading final report file.*")
-        elif final_result_dict and 'report' in final_result_dict:
-            logger.info("Using report content directly from agent result.")
-            # If agent directly returns report content
-            final_ui_update[markdown_display_comp] = gr.update(value=final_result_dict['report'])
-            # Cannot offer download if only content is available
-            final_ui_update[markdown_download_comp] = gr.update(value=None, label="Download Research Report",
-                                                                interactive=False)
         else:
-            logger.warning("Final report file not found and not in result dict.")
+            logger.warning("Final report file not found at returned path or expected location.")
             final_ui_update[markdown_display_comp] = gr.update(value="# Research Complete\n\n*Final report not found.*")
 
         yield final_ui_update

@@ -55,7 +55,13 @@ Activate the virtual environment:
 source .venv/bin/activate
 ```
 
-#### Step 3: Configure Environment
+#### Step 3: Install Python Packages
+Install the required Python packages using uv:
+```bash
+uv pip install -r requirements.txt
+```
+
+#### Step 4: Configure Environment
 1. Create a copy of the example environment file:
 - Windows (Command Prompt):
 ```bash
@@ -67,7 +73,7 @@ cp .env.example .env
 ```
 2. Open `.env` in your preferred text editor and add your API keys and other settings
 
-#### Step 4: Enjoy the web-ui
+#### Step 5: Enjoy the web-ui
 1.  **Run the WebUI:**
     ```bash
     python webui.py --ip 127.0.0.1 --port 7788
