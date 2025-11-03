@@ -181,7 +181,7 @@ class DeepResearchAgent:
     async def _conduct_browser_research(self, query: str, task_id: str) -> str:
         """Conduct research using browser agent"""
         try:
-            stop_event = threading.Event()
+            self.stop_event = stop_event = threading.Event()
             result = await run_single_browser_task(
                 task_query=f"Research and gather comprehensive information about: {query}",
                 task_id=task_id,
