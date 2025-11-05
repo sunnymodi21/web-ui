@@ -46,7 +46,7 @@ class BrowserContextConfig:
         self.save_downloads_path = save_downloads_path
         self._extra = kwargs
     
-    def model_dump(self) -> Dict[str, Any]:
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
         """Compatibility method for pydantic model_dump"""
         return {
             'window_width': self.window_width,
