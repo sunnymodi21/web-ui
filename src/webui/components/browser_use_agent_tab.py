@@ -382,10 +382,11 @@ async def run_agent_task(
 
     override_system_prompt = get_setting("override_system_prompt") or None
     extend_system_prompt = get_setting("extend_system_prompt") or None
-    llm_provider_name = get_setting(
-        "llm_provider", None
-    )  # Default to None if not found
-    llm_model_name = get_setting("llm_model_name", None)
+
+    # Use DEFAULT_LLM environment variable as fallback
+    default_llm_provider = os.getenv("DEFAULT_LLM", "anthropic")
+    llm_provider_name = get_setting("llm_provider", default_llm_provider)
+    llm_model_name = get_setting("llm_model_name", "claude-sonnet-4-5")
     llm_temperature = get_setting("llm_temperature", 0.6)
     use_vision = get_setting("use_vision", True)
     ollama_num_ctx = get_setting("ollama_num_ctx", 16000)
@@ -494,12 +495,12 @@ async def run_agent_task(
         # Close existing resources if not keeping open
         if not keep_browser_open:
             if webui_manager.bu_browser_context:
-                logger.info("Closing previous browser context.")
-                await webui_manager.bu_browser_context.close()
+                logger.info("Stopping previous browser context.")
+                await webui_manager.bu_browser_context.stop()
                 webui_manager.bu_browser_context = None
             if webui_manager.bu_browser:
-                logger.info("Closing previous browser.")
-                await webui_manager.bu_browser.close()
+                logger.info("Stopping previous browser.")
+                await webui_manager.bu_browser.stop()
                 webui_manager.bu_browser = None
 
         # Create Browser if needed
@@ -796,12 +797,12 @@ async def run_agent_task(
             # Close browser/context if requested
             if should_close_browser_on_finish:
                 if webui_manager.bu_browser_context:
-                    logger.info("Closing browser context after task.")
-                    await webui_manager.bu_browser_context.close()
+                    logger.info("Stopping browser context after task.")
+                    await webui_manager.bu_browser_context.stop()
                     webui_manager.bu_browser_context = None
                 if webui_manager.bu_browser:
-                    logger.info("Closing browser after task.")
-                    await webui_manager.bu_browser.close()
+                    logger.info("Stopping browser after task.")
+                    await webui_manager.bu_browser.stop()
                     webui_manager.bu_browser = None
 
             # --- 8. Final UI Update ---
