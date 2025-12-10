@@ -42,6 +42,8 @@ services:
       # Application Settings
       - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY:-false}
       - BROWSER_USE_LOGGING_LEVEL=${BROWSER_USE_LOGGING_LEVEL:-info}
+      - BROWSER_USE_API_KEY=${BROWSER_USE_API_KEY:-}
+      - DEFAULT_LLM=${DEFAULT_LLM:-anthropic}
 
       # Browser Settings
       - BROWSER_PATH=
